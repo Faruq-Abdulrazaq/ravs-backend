@@ -12,7 +12,7 @@ initializeApp({
 
 const db = getFirestore();
 app.use(express.json());
-app.use(cors({ origin: 'https://ravs-53992.web.app/' , credentials :  true}));
+app.use(cors({ origin: 'https://ravs-53992.web.app' , credentials :  true}));
 app.listen(PORT, () => console.log(`server running on PORT ${PORT}`))
 
 app.get('/', (req, res) => {
