@@ -36,7 +36,7 @@ app.get('/getAll', async (req, res) => {
     snapshot.forEach(doc => {
         const predator = {
             _id: doc.id,
-            fromDb: doc.data().data
+            fromDb: doc.data()
         }
         dataReturned.push(predator)
     });
