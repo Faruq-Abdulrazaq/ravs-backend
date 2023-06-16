@@ -23,7 +23,7 @@ app.get('/', (req, res) => {
 app.post('/upload', async (req, res) => {
     const postData = await db.collection('RAVS').add({
         registeredData: req.body.registeredData,
-        date: req.body.date,
+        dateTime: new Date(),
         verified: req.body.verified
     });
     res.json('RAVs Post')
