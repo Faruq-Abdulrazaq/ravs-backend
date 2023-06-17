@@ -25,6 +25,10 @@ app.post('/upload', async (req, res) => {
         registeredData: req.body.registeredData,
         dateTime: new Date(),
         verified: req.body.verified,
+        uploadedBy: req.body.uploadedBy,
+        queriedBy: "",
+        approvedBy: "",
+        queryMessage: "",
         queried: false
     });
     res.json('RAVs Post')
