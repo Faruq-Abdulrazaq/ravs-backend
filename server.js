@@ -35,8 +35,8 @@ app.post('/upload', async (req, res) => {
 })
 
 app.get('/getAll', async (req, res) => {
-    const citiesRef = db.collection('RAVS');
-    const snapshot = await citiesRef.get();
+    const RAVSRef = db.collection('RAVS');
+    const snapshot = await RAVSRef.get();
     const dataReturned = []
     snapshot.forEach(doc => {
         const predator = {
@@ -52,9 +52,30 @@ app.get('/getAll', async (req, res) => {
     })
 })
 
+app.post('/getOneData', async (req, res) => {
+    const RAVSRef = db.collection('RAVS').doc(`${req.body.docId}`);
+    const doc = await RAVSRef.get();
+    if (!doc.exists) {
+        res.json( {
+            message: "RAVs Get Query || No such document!",
+            status: "ERROR",
+            data: {}
+        })
+    } else {
+        res.json( {
+            message: "RAVs Get Query || Document data",
+            status: "SUCCESS",
+            data: {
+                _id : doc.id,
+                fromDb: doc.data()
+            }
+        })
+    }
+})
+
 app.post('/getQuery', async (req, res) => {
-    const citiesRef = db.collection('RAVS');
-    const snapshot = await citiesRef.where('uploadedBy', '==', `${req.body.uploadedBy}`).get();
+    const RAVSRef = db.collection('RAVS');
+    const snapshot = await RAVSRef.where('uploadedBy', '==', `${req.body.uploadedBy}`).get();
     const dataReturned = []
     if (snapshot.empty) {
         res.json( {
