@@ -52,6 +52,41 @@ app.get('/getAll', async (req, res) => {
     })
 })
 
+app.post('/getQuery', async (req, res) => {
+    const citiesRef = db.collection('RAVS');
+    const snapshot = await citiesRef.where('uploadedBy', '==', `${req.body.uploadedBy}`).get();
+    const dataReturned = []
+    if (snapshot.empty) {
+        res.json( {
+            message: "RAVs Get Query || No matching documents",
+            status: "ERROR",
+            data: {}
+        })
+        return;
+    }
+
+    snapshot.forEach(doc => {
+        if (doc.data().queried) {
+            const predator = {
+                _id: doc.id,
+                fromDb: doc.data()
+            }
+            dataReturned.push(predator)
+            res.json( {
+                message: "RAVs Get Query || No matching documents",
+                status: "ERROR",
+                data: dataReturned
+            })
+        } else {
+            res.json( {
+                message: "RAVs Get Query || No query for this user",
+                status: "SUCCESS",
+                data: {}
+            })
+        }
+    });
+})
+
 
 
 
