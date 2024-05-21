@@ -2,8 +2,6 @@
 
 # dependencies
 /node_modules
-/pb_data
-/pb_migrations
 /.pnp
 .pnp.js
 
