@@ -1,11 +1,35 @@
-import PocketBase from "pocketbase";
 import express from "express";
 import cors from "cors";
+import { initializeApp, cert } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 const PORT = 8000;
 const app = express();
+const allowedOrigins = ["https://ravs-53992.web.app", "http://localhost:3000"];
+const serviceAccount =
+  "./Private/ravs-53992-firebase-adminsdk-wet19-305bf28f9e.json";
 
+initializeApp({
+  credential: cert(serviceAccount),
+});
+const db = getFirestore();
 app.use(express.json());
-app.use(cors({ origin: "*", credentials: true }));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      // Allow specific origins
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        return callback(null, true);
+      }
+
+      // Deny all other origins
+      return callback(new Error("Origin not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 app.listen(PORT, () => console.log(`server running on PORT ${PORT}`));
 
 app.get("/", (req, res) => {
