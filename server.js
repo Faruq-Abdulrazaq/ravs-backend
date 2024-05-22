@@ -4,7 +4,11 @@ import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 const PORT = 8000;
 const app = express();
-const allowedOrigins = ["https://ravs-53992.web.app", "http://localhost:3000"];
+const allowedOrigins = [
+  process.env.CORS_ALLOW_1,
+  process.env.CORS_ALLOW_2,
+  process.env.CORS_ALLOW_3,
+];
 const serviceAccount =
   "./Private/ravs-53992-firebase-adminsdk-wet19-305bf28f9e.json";
 
