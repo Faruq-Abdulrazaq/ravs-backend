@@ -1,7 +1,10 @@
 import express from "express";
 import cors from "cors";
+import dotenv from "dotenv";
 import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+dotenv.config();
+
 const PORT = 8000;
 const app = express();
 const allowedOrigins = [
@@ -15,6 +18,7 @@ const serviceAccount =
 initializeApp({
   credential: cert(serviceAccount),
 });
+
 const db = getFirestore();
 app.use(express.json());
 app.use(
@@ -35,7 +39,6 @@ app.use(
   })
 );
 app.listen(PORT, () => console.log(`server running on PORT ${PORT}`));
-
 app.get("/", (req, res) => {
   // postDummy(personalInformation, ContactInformation, NewAddress, witnessInformation, prove)
   res.json("Welcome to RAVS backend application");
