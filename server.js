@@ -1,6 +1,8 @@
 import PocketBase from "pocketbase";
 import express from "express";
+import dotenv from "dotenv";
 import cors from "cors";
+dotenv.config();
 const PORT = 8000;
 const app = express();
 const getApiBaseUrl = () => {
