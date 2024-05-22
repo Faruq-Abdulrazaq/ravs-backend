@@ -3,10 +3,35 @@ import express from "express";
 import cors from "cors";
 const PORT = 8000;
 const app = express();
-const pb = new PocketBase("https://complete-ravs.pockethost.io");
+const getApiBaseUrl = () => {
+  const isDevelopment = process.env.NODE_ENV === "development";
+  return isDevelopment
+    ? process.env.POCKETBASE_URL_DEV
+    : process.env.POCKETBASE_URL_PROD;
+};
+
+const allowedOrigins = [process.env.CORS_ALLOW_1, process.env.CORS_ALLOW_2];
+
+const pb = new PocketBase(`${getApiBaseUrl()}`);
 
 app.use(express.json());
-app.use(cors({ origin: "*", credentials: true }));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      // Allow specific origins
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        return callback(null, true);
+      }
+
+      // Deny all other origins
+      return callback(new Error("Origin not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 app.listen(PORT, () => console.log(`server running on PORT ${PORT}`));
 
 app.get("/", (req, res) => {
