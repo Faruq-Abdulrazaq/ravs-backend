@@ -1,20 +1,42 @@
-import PocketBase from "pocketbase";
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import { createClient } from "@supabase/supabase-js";
+import crypto from "crypto";
+
 dotenv.config();
+const supabase = createClient(
+  process.env.SUPERBASE_URL,
+  process.env.SUPERBASE_KEY,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+);
+
+const secretbase = createClient(
+  process.env.SUPERBASE_URL,
+  process.env.SUPERBASE_SECRET,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+);
 const PORT = 8000;
 const app = express();
-const getApiBaseUrl = () => {
-  const isDevelopment = process.env.NODE_ENV === "development";
-  return isDevelopment
-    ? process.env.POCKETBASE_URL_DEV
-    : process.env.POCKETBASE_URL_PROD;
-};
-
 const allowedOrigins = [process.env.CORS_ALLOW_1, process.env.CORS_ALLOW_2];
 
-const pb = new PocketBase(`${getApiBaseUrl()}`);
+const generateRandomString = (length) => {
+  return crypto
+    .randomBytes(length)
+    .toString("base64") // Convert to base64 string
+    .replace(/[^a-zA-Z0-9]/g, "") // Remove non-alphanumeric characters
+    .slice(0, length); // Return the first 'length' characters
+};
 
 app.use(express.json());
 app.use(
@@ -42,13 +64,14 @@ app.get("/", (req, res) => {
 
 //Add Address
 app.post("/uploadAddress", async (req, res) => {
-  const data = {
+  const { error } = await supabase.from("RAVS_DATA").insert({
+    kyct_id: "",
     message: req.body.message,
     uploadedBy: req.body.uploadedBy,
     status: req.body.status,
     surname: req.body.surname,
     othernames: req.body.othernames,
-    dateOfBirth: req.body.dateOfBirth,
+    dob: req.body.dateOfBirth,
     gender: req.body.gender,
     nationality: req.body.nationality,
     stateOfOrigin: req.body.stateOfOrigin,
@@ -75,59 +98,88 @@ app.post("/uploadAddress", async (req, res) => {
     secondWitnessPhoneNumber: req.body.secondWitnessPhoneNumber,
     nin: req.body.nin,
     registrationCenter: req.body.registrationCenter,
-  };
-
-  const record = await pb.collection("ravs_data").create(data);
-  res.json("RAVs Post" + record);
+  });
+  if (!error) {
+    res.json("RAVs Post");
+  } else {
+    res.json("RAVs error" + error);
+  }
 });
 
-//Auth users
-app.post("/authContext", async (req, res) => {
-  try {
-    const authData = await pb
-      .collection("ravs_users")
-      .authWithPassword(req.body.email, req.body.password);
-    res.json(authData);
-  } catch (err) {
-    return res.status(401).json({ error: "Invalid email or password" });
+//Approve  address
+app.post("/approveAddress", async (req, res) => {
+  const { error } = await supabase
+    .from("RAVS_DATA")
+    .update({ status: "approved", kyct_id: generateRandomString(12) })
+    .eq("id", req.body.id);
+
+  if (error) {
+    return res.status(401).json({ error: "Error getting data" });
+  } else {
+    return res.status(200).json({ error: "Address approved" });
+  }
+});
+
+//Get all address
+app.get("/getAll", async (req, res) => {
+  const { data, error } = await supabase.from("RAVS_DATA").select();
+  if (data) {
+    res.json(data);
+  } else {
+    return res.status(401).json({ error: "Error getting data" });
+  }
+});
+
+//Get one address
+app.get("/getOneData", async (req, res) => {
+  const { data, error } = await supabase
+    .from("RAVS_DATA")
+    .select()
+    .eq("kyct_id", req.query.id);
+  if (data) {
+    res.json(data);
+  } else {
+    console.log(error);
+    return res.status(401).json({ error: "Could not find data" });
   }
 });
 
 //Get all staffs
 app.get("/getAllStaffs", async (req, res) => {
-  const records = await pb.collection("ravs_users").getFullList({
-    sort: "-created",
+  try {
+    const { data, error } = await secretbase.auth.admin.listUsers();
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    res.json(error);
+  }
+});
+
+//Auth users
+app.post("/authContext", async (req, res) => {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: req.body.email,
+    password: req.body.password,
   });
-  res.json(records);
+  if (data) {
+    res.json(data);
+  }
+  if (error) {
+    return res.status(401).json({ error: "Invalid email or password" });
+  }
 });
 
 //Add Supervisor
 app.post("/addSupervisor", async (req, res) => {
-  const data = {
-    username: "",
+  const { data, error } = await supabase.auth.signUp({
     email: req.body.email,
-    emailVisibility: true,
     password: req.body.password,
-    passwordConfirm: req.body.passwordConfirm,
-    name: req.body.name,
-    phoneNumber: req.body.phoneNumber,
-    role: req.body.role,
-    createdBy: req.body.createdBy,
-    state: req.body.state,
-    address: req.body.address,
-  };
-
-  const record = await pb.collection("ravs_users").create(data);
-  res.json(record);
-});
-
-//Get all address
-app.get("/getAll", async (req, res) => {
-  const records = await pb.collection("ravs_data").getFullList({
-    sort: "-created",
+    phone: req.body.phone,
+    options: req.body.options,
   });
-  res.json(records);
+  if (data) {
+    res.json(data);
+  } else {
+    return res.status(401).json({ error: "An error occured" });
+  }
 });
-
-//Get one address
-app.post("/getOneData", async (req, res) => {});
