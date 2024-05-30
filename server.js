@@ -62,6 +62,40 @@ app.get("/", (req, res) => {
   res.json("Welcome to RAVS backend application");
 });
 
+//DashboardIndicators
+app.get("/DashboardIndicators", async (req, res) => {
+  try {
+    const results = await Promise.all([
+      supabase.from("RAVS_DATA").select("*", { count: "exact", head: true }),
+      supabase.from("RAVS_DATA").select().eq("status", "pending"),
+      supabase.from("RAVS_DATA").select().eq("status", "approved"),
+      supabase
+        .from("RAVS_DATA")
+        .select(
+          `
+        surname,
+        street,
+        nationality,
+        buildingType,
+        propertyType,
+        stateOfResidence,
+        lgaOfResidence
+      `
+        )
+        .limit(4),
+    ]);
+
+    const count = results[0].count;
+    const pendingData = Object.values(results[1].data).length;
+    const approvedData = Object.values(results[2].data).length;
+    const selectedData = results[3].data;
+
+    res.json([count, pendingData, approvedData, selectedData]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 //Add Address
 app.post("/uploadAddress", async (req, res) => {
   const { error } = await supabase.from("RAVS_DATA").insert({
