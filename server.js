@@ -82,6 +82,7 @@ app.get("/DashboardIndicators", async (req, res) => {
         lgaOfResidence
       `
         )
+        .order("created_at", { ascending: false })
         .limit(4),
     ]);
 
@@ -156,7 +157,10 @@ app.post("/approveAddress", async (req, res) => {
 
 //Get all address
 app.get("/getAll", async (req, res) => {
-  const { data, error } = await supabase.from("RAVS_DATA").select();
+  const { data, error } = await supabase
+    .from("RAVS_DATA")
+    .select()
+    .order("created_at", { ascending: false });
   if (data) {
     res.json(data);
   } else {
