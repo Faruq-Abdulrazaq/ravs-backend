@@ -38,6 +38,60 @@ const generateRandomString = (length) => {
     .slice(0, length); // Return the first 'length' characters
 };
 
+const getLast24Hours = () => {
+  const now = new Date();
+  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  const year = twentyFourHoursAgo.getFullYear();
+  const month = String(twentyFourHoursAgo.getMonth() + 1).padStart(2, "0");
+  const day = String(twentyFourHoursAgo.getDate()).padStart(2, "0");
+  const hours = String(twentyFourHoursAgo.getHours()).padStart(2, "0");
+  const minutes = String(twentyFourHoursAgo.getMinutes()).padStart(2, "0");
+
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
+};
+
+const getLast7Days = () => {
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const year = sevenDaysAgo.getFullYear();
+  const month = String(sevenDaysAgo.getMonth() + 1).padStart(2, "0");
+  const day = String(sevenDaysAgo.getDate()).padStart(2, "0");
+  const hours = String(sevenDaysAgo.getHours()).padStart(2, "0");
+  const minutes = String(sevenDaysAgo.getMinutes()).padStart(2, "0");
+
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
+};
+
+const getLast14Days = () => {
+  const now = new Date();
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+  const year = fourteenDaysAgo.getFullYear();
+  const month = String(fourteenDaysAgo.getMonth() + 1).padStart(2, "0");
+  const day = String(fourteenDaysAgo.getDate()).padStart(2, "0");
+  const hours = String(fourteenDaysAgo.getHours()).padStart(2, "0");
+  const minutes = String(fourteenDaysAgo.getMinutes()).padStart(2, "0");
+
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
+};
+
+const postActivity = async ({ activity, lga, role, name, userId }) => {
+  const { error } = await supabase.from("RAVS_ACTIVITIES").insert({
+    activity: activity,
+    lga: lga,
+    role: role,
+    name: name,
+    userId: userId,
+  });
+  if (!error) {
+    return true;
+  } else {
+    return false;
+  }
+};
+
 app.use(express.json());
 app.use(
   cors({
@@ -135,6 +189,68 @@ app.post("/uploadAddress", async (req, res) => {
     registrationCenter: req.body.registrationCenter,
   });
   if (!error) {
+    postActivity({
+      activity: "Entry",
+      lga: req.body.lgaOfResidence,
+      role: req.body.uploadedByRole,
+      name: req.body.uploadedByName,
+      userId: req.body.uploadedBy,
+    });
+    res.json("RAVs Post");
+  } else {
+    res.json("RAVs error" + error);
+  }
+});
+
+//Update address
+app.post("/updateAddress", async (req, res) => {
+  const { error } = await supabase
+    .from("RAVS_DATA")
+    .update({
+      kyct_id: "",
+      message: req.body.data.message,
+      uploadedBy: req.body.data.uploadedBy,
+      status: req.body.data.status,
+      surname: req.body.data.surname,
+      othernames: req.body.data.othernames,
+      dob: req.body.data.dateOfBirth,
+      gender: req.body.data.gender,
+      nationality: req.body.data.nationality,
+      stateOfOrigin: req.body.data.stateOfOrigin,
+      localGovernmentArea: req.body.data.localGovernmentArea,
+      homeAddress: req.body.data.homeAddress,
+      occupation: req.body.data.occupation,
+      phoneNumber: req.body.data.phoneNumber,
+      alternativePhoneNumber: req.body.data.alternativePhoneNumber,
+      emailAddress: req.body.data.emailAddress,
+      dependencyCount: req.body.data.dependencyCount,
+      buildingType: req.body.data.buildingType,
+      propertyType: req.body.data.propertyType,
+      street: req.body.data.street,
+      stateOfResidence: req.body.data.stateOfResidence,
+      lgaOfResidence: req.body.data.lgaOfResidence,
+      zipCode: req.body.data.zipCode,
+      geoLocation: req.body.data.geoLocation,
+      lengthOfResidency: req.body.data.lengthOfResidency,
+      firstWitnessFullName: req.body.data.firstWitnessFullName,
+      firstWitnessRelationshipType: req.body.data.firstWitnessRelationshipType,
+      firstWitnessPhoneNumber: req.body.data.firstWitnessPhoneNumber,
+      secondWitnessFullName: req.body.data.secondWitnessFullName,
+      secondWitnessRelationshipType:
+        req.body.data.secondWitnessRelationshipType,
+      secondWitnessPhoneNumber: req.body.data.secondWitnessPhoneNumber,
+      nin: req.body.data.nin,
+      registrationCenter: req.body.data.registrationCenter,
+    })
+    .eq("id", req.body.id);
+  if (!error) {
+    postActivity({
+      activity: "Edit Entry",
+      lga: req.body.data.lgaOfResidence,
+      role: req.body.data.uploadedByRole,
+      name: req.body.data.uploadedByName,
+      userId: req.body.data.uploadedBy,
+    });
     res.json("RAVs Post");
   } else {
     res.json("RAVs error" + error);
@@ -151,7 +267,35 @@ app.post("/approveAddress", async (req, res) => {
   if (error) {
     return res.status(401).json({ error: "Error getting data" });
   } else {
+    postActivity({
+      activity: "Approval",
+      lga: req.body.lga,
+      role: req.body.role,
+      name: req.body.name,
+      userId: req.body.uploadedBy,
+    });
     return res.status(200).json({ error: "Address approved" });
+  }
+});
+
+//Query  address
+app.post("/queryAddress", async (req, res) => {
+  const { error } = await supabase
+    .from("RAVS_DATA")
+    .update({ status: "queried", message: req.body.message })
+    .eq("id", req.body.id);
+
+  if (error) {
+    return res.status(401).json({ error: "Error querying data" });
+  } else {
+    postActivity({
+      activity: "Query",
+      lga: req.body.lga,
+      role: req.body.role,
+      name: req.body.name,
+      userId: req.body.uploadedBy,
+    });
+    return res.status(200).json({ error: "Queried" });
   }
 });
 
@@ -193,6 +337,115 @@ app.get("/getAllStaffs", async (req, res) => {
   }
 });
 
+//Get all staffs
+app.get("/getOneStaff", async (req, res) => {
+  try {
+    const { data, error } = await secretbase.auth.admin.getUserById(
+      req.query.id
+    );
+    if (error) throw error;
+    res.json(data.user.user_metadata);
+  } catch (error) {
+    res.json(error);
+  }
+});
+
+//Update staff data
+app.post("/updateStaff", async (req, res) => {
+  try {
+    const { data: user, error } = await secretbase.auth.admin.updateUserById(
+      req.body.id,
+      req.body.data
+    );
+    if (error) throw error;
+    if (req.body.name) {
+      postActivity({
+        activity: "Update staff",
+        lga: req.body.lga,
+        role: req.body.role,
+        name: req.body.name,
+        userId: req.body.uploadedBy,
+      });
+    }
+    res.json(data);
+  } catch (error) {
+    res.json(error);
+  }
+});
+
+//Get summary data
+app.get("/getSummaryData", async (req, res) => {
+  try {
+    const results = await Promise.all([
+      supabase
+        .from("RAVS_DATA")
+        .select("stateOfResidence")
+        .gte("created_at", getLast24Hours()),
+      supabase
+        .from("RAVS_DATA")
+        .select("stateOfResidence")
+        .gte("created_at", getLast7Days()),
+      supabase.from("RAVS_DATA").select("stateOfResidence"),
+      supabase
+        .from("RAVS_DATA")
+        .select("stateOfResidence")
+        .gte("created_at", getLast14Days()),
+      supabase
+        .from("RAVS_ACTIVITIES")
+        .select()
+        .order("created_at", { ascending: false })
+        .limit(2),
+    ]);
+
+    // if (error) throw error;
+    const last24Hours = results[0];
+    const last7Days = results[1];
+    const stateCount = results[2];
+    const last14Days = results[3];
+    const activity = results[4];
+    res.json([last24Hours, last7Days, stateCount, last14Days, activity]);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+//Get activity
+app.get("/getActivity", async (req, res) => {
+  const { data, error } = await supabase
+    .from("RAVS_ACTIVITIES")
+    .select()
+    .order("created_at", { ascending: false });
+
+  if (data) {
+    const formattedData = data.map((item) => {
+      const createdAt = new Date(item.created_at);
+      const formattedCreatedAt = createdAt.toLocaleString();
+      return {
+        ...item,
+        created_at: formattedCreatedAt,
+      };
+    });
+    res.json(formattedData);
+  } else {
+    return res.status(401).json({ error: "Error getting data" });
+  }
+});
+
+//Update staff password
+app.post("/updatePassword", async (req, res) => {
+  try {
+    const { data: user, error } = await secretbase.auth.admin.updateUserById(
+      req.body.id,
+      req.body.data
+    );
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    res.json(error);
+  }
+});
+
 //Auth users
 app.post("/authContext", async (req, res) => {
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -216,6 +469,13 @@ app.post("/addSupervisor", async (req, res) => {
     options: req.body.options,
   });
   if (data) {
+    postActivity({
+      activity: "Onboard staff",
+      lga: req.body.lga,
+      role: req.body.role,
+      name: req.body.name,
+      userId: req.body.uploadedBy,
+    });
     res.json(data);
   } else {
     return res.status(401).json({ error: "An error occured" });
